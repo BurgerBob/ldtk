@@ -17,6 +17,7 @@ typedef AppSettings = {
 	var autoInstallUpdates : Bool;
 	var colorBlind : Bool;
 	var blurMask : Bool;
+	var worldHdRender : Bool;
 	var navigationKeys : NavigationKeys;
 
 	var openLastProject : Bool;
@@ -99,6 +100,7 @@ class Settings {
 			autoInstallUpdates: true,
 			colorBlind: false,
 			blurMask: true,
+			worldHdRender: false,
 			navigationKeys: null,
 
 			singleLayerMode: false,

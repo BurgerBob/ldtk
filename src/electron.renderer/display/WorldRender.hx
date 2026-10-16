@@ -900,6 +900,35 @@ class WorldRender extends dn.Process {
 				return;
 			}
 
+			// High-resolution render (actual tiles, no entities)
+			if( settings.v.worldHdRender && ( li.def.isAutoLayer() || li.def.type==Tiles ) ) {
+				var td = li.getTilesetDef();
+				if( td!=null && td.isAtlasLoaded() ) {
+					var hdTg = new h2d.TileGroup(td.getAtlasTile());
+					wl.render.addChildAt(hdTg,0);
+					hdTg.alpha = li.def.displayOpacity;
+
+					if( li.def.isAutoLayer() ) {
+						li.def.iterateActiveRulesInDisplayOrder( li, (r)->{
+							if( li.autoTilesCache.exists( r.uid ) ) {
+								for( allTiles in li.autoTilesCache.get( r.uid ) )
+								for( tileInfos in allTiles )
+									if( !isCoordDone(li, Std.int(tileInfos.x/li.def.gridSize), Std.int(tileInfos.y/li.def.gridSize)) )
+										LayerRender.renderAutoTileInfos(li, td, tileInfos, hdTg);
+							}
+						});
+					}
+					else {
+						for(cy in 0...li.cHei)
+						for(cx in 0...li.cWid)
+							if( li.hasAnyGridTile(cx,cy) && !isCoordDone(li,cx,cy) )
+								for( tileInf in li.getGridTileStack(cx,cy) )
+									LayerRender.renderGridTile(li, td, tileInf, cx,cy, hdTg);
+					}
+					return;
+				}
+			}
+
 			var pixelGrid = new dn.heaps.PixelGrid(li.def.gridSize, li.cWid, li.cHei);
 			wl.render.addChildAt(pixelGrid,0);
 			pixelGrid.x = li.pxTotalOffsetX;

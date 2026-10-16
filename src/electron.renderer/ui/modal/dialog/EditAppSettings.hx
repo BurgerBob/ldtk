@@ -151,6 +151,10 @@ class EditAppSettings extends ui.modal.Dialog {
 		var i = Input.linkToHtmlInput(settings.v.blurMask, jForm.find("#blurMask"));
 		i.onChange = ()->onSettingChanged();
 
+		// World HD render
+		var i = Input.linkToHtmlInput(settings.v.worldHdRender, jForm.find("#worldHdRender"));
+		i.onChange = ()->onSettingChanged();
+
 		// Fields render
 		var jSelect = jForm.find("#fieldsRender");
 		jSelect.empty();
