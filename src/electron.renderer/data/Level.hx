@@ -683,7 +683,8 @@ class Level {
 			var ei = null;
 			while( i<li.entityInstances.length ) {
 				ei = li.entityInstances[i];
-				if( !ei.def.allowOutOfBounds && !inBounds(ei.x, ei.y) ) {
+				// Edges are inclusive: an entity sitting exactly on the right/bottom border (ex: bottom pivot) is kept
+				if( !ei.def.allowOutOfBounds && !( ei.x>=0 && ei.x<=pxWid && ei.y>=0 && ei.y<=pxHei ) ) {
 					App.LOG.general('Removed out-of-bounds entity ${ei.def.identifier} in $li');
 					li.entityInstances.splice(i,1);
 					n++;
