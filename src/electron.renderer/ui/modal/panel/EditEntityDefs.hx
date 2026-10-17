@@ -66,8 +66,29 @@ class EditEntityDefs extends ui.modal.Panel {
 			});
 		});
 
+		// Import entities from another project
+		jEntityList.parent().find("button.importFromProject").click( _->{
+			var dir = App.ME.settings.getUiDir("ImportEntityDefs", App.ME.getDefaultDialogDir());
+			dn.js.ElectronDialogs.openFile([".ldtk"], dir, (filePath)->{
+				App.ME.settings.storeUiDir("ImportEntityDefs", dn.FilePath.extractDirectoryWithoutSlash(filePath,true));
+				var json : ldtk.Json.ProjectJson = try haxe.Json.parse( NT.readFileString(filePath) ) catch(_) null;
+				if( json==null || json.defs==null || json.defs.entities==null ) {
+					N.error("Failed to read entities from this file");
+					return;
+				}
+
+				var res = project.defs.importEntityDefsFromJson(json);
+				editor.ge.emit(EntityDefAdded);
+				if( res.added.length>0 ) {
+					editor.ge.emit(EnumDefAdded);
+					selectEntity( project.defs.getEntityDef(null, res.added[0]) );
+				}
+				N.success( L.untranslated('${res.added.length} entity(ies) imported, ${res.skipped.length} skipped (name already exists)') );
+			});
+		});
+
 		// Create fields editor
-		fieldsForm = new ui.FieldDefsForm( FP_Entity(null) );
+		fieldsForm =new ui.FieldDefsForm( FP_Entity(null) );
 		jContent.find("#fields").replaceWith( fieldsForm.jWrapper );
 
 		// Create quick search

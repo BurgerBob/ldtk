@@ -414,6 +414,12 @@ class FieldDef {
 		}
 	}
 
+	/** Point this Enum field to another EnumDef (used when importing defs from another project) **/
+	public function remapEnumDefUid(newUid:Int) {
+		require(F_Enum(null));
+		type = F_Enum(newUid);
+	}
+
 	public inline function isEnum(?enumDefUid:Int) {
 		if( enumDefUid!=null )
 			return switch type {

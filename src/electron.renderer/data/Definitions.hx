@@ -383,6 +383,138 @@ class Definitions {
 		return copy;
 	}
 
+	/**
+		Import all entity defs found in another project JSON.
+		- entities whose identifier already exists locally are skipped
+		- tilesets are matched by identifier with local ones (reference is dropped if none exists)
+		- enums are matched by identifier with local ones, or created if missing
+	**/
+	public function importEntityDefsFromJson(srcJson:ldtk.Json.ProjectJson) : { added:Array<String>, skipped:Array<String> } {
+		var result = { added:[], skipped:[] };
+		var srcDefs = srcJson.defs;
+		if( srcDefs==null || srcDefs.entities==null )
+			return result;
+
+		// Tilesets remap (by identifier)
+		var tilesetMap : Map<Int,Int> = new Map();
+		for(tdJson in ( srcDefs.tilesets==null ? [] : srcDefs.tilesets )) {
+			var local = getTilesetDef(null, tdJson.identifier);
+			if( local!=null )
+				tilesetMap.set(tdJson.uid, local.uid);
+		}
+		function remapTileset(srcUid:Null<Int>) : Null<Int> {
+			return srcUid==null ? null : tilesetMap.get(srcUid);
+		}
+
+		// Enums remap (by identifier, created if missing)
+		var enumMap : Map<Int,Null<Int>> = new Map();
+		function remapEnum(srcUid:Int) : Null<Int> {
+			if( enumMap.exists(srcUid) )
+				return enumMap.get(srcUid);
+
+			var srcEnum : Null<ldtk.Json.EnumDefJson> = null;
+			for(e in ( srcDefs.enums==null ? [] : srcDefs.enums ).concat( srcDefs.externalEnums==null ? [] : srcDefs.externalEnums ))
+				if( e.uid==srcUid )
+					srcEnum = e;
+
+			var out : Null<Int> = null;
+			if( srcEnum!=null ) {
+				var local = getEnumDef(null, srcEnum.identifier);
+				if( local!=null )
+					out = local.uid;
+				else if( srcEnum.externalRelPath==null ) {
+					var copy = data.def.EnumDef.fromJson(_project, srcJson.jsonVersion, srcEnum);
+					copy.uid = _project.generateUniqueId_int();
+					copy.iconTilesetUid = remapTileset(copy.iconTilesetUid);
+					for(v in copy.values)
+						if( v.tileRect!=null ) {
+							var t = remapTileset(v.tileRect.tilesetUid);
+							if( t==null )
+								v.tileRect = null;
+							else
+								v.tileRect.tilesetUid = t;
+						}
+					enums.push(copy);
+					initFastAccesses();
+					out = copy.uid;
+				}
+			}
+			enumMap.set(srcUid, out);
+			return out;
+		}
+
+		var srcEntityIds : Map<Int,String> = new Map();
+		for(json in srcDefs.entities)
+			srcEntityIds.set(json.uid, json.identifier);
+
+		var imported : Array<data.def.EntityDef> = [];
+		for(json in srcDefs.entities) {
+			if( !isEntityIdentifierUnique(json.identifier) ) {
+				result.skipped.push(json.identifier);
+				continue;
+			}
+
+			var ed = data.def.EntityDef.fromJson(_project, json);
+			ed.uid = _project.generateUniqueId_int();
+
+			// Tilesets
+			ed.tilesetId = remapTileset(ed.tilesetId);
+			if( ed.tileRect!=null ) {
+				var t = remapTileset(ed.tileRect.tilesetUid);
+				if( t==null ) ed.tileRect = null; else ed.tileRect.tilesetUid = t;
+			}
+			if( ed.uiTileRect!=null ) {
+				var t = remapTileset(ed.uiTileRect.tilesetUid);
+				if( t==null ) ed.uiTileRect = null; else ed.uiTileRect.tilesetUid = t;
+			}
+			if( ed.renderMode==Tile && ed.tileRect==null )
+				ed.renderMode = Rectangle;
+
+			// Fields
+			var keptFields = [];
+			for(fd in ed.fieldDefs) {
+				fd.uid = _project.generateUniqueId_int();
+
+				if( fd.tilesetUid!=null ) {
+					fd.tilesetUid = remapTileset(fd.tilesetUid);
+					if( fd.tilesetUid==null && fd.type==F_Tile )
+						fd.setDefault(null);
+				}
+
+				if( fd.isEnum() ) {
+					var srcUid = switch fd.type {
+						case F_Enum(uid): uid;
+						case _: -1;
+					}
+					var localUid = remapEnum(srcUid);
+					if( localUid==null )
+						continue; // enum can't be recreated: field dropped
+					fd.remapEnumDefUid(localUid);
+				}
+
+				keptFields.push(fd);
+			}
+			ed.fieldDefs = keptFields;
+
+			entities.push(ed);
+			imported.push(ed);
+			result.added.push(ed.identifier);
+		}
+
+		// Entity refs restricted to a specific entity def
+		initFastAccesses();
+		for(ed in imported)
+		for(fd in ed.fieldDefs)
+			if( fd.allowedRefsEntityUid!=null ) {
+				var srcId = srcEntityIds.get(fd.allowedRefsEntityUid);
+				var local = srcId==null ? null : getEntityDef(null, srcId);
+				fd.allowedRefsEntityUid = local==null ? null : local.uid;
+			}
+
+		_project.tidy();
+		return result;
+	}
+
 	public function removeEntityDef(ed:data.def.EntityDef) {
 		entities.remove(ed);
 		_project.tidy();
