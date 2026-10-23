@@ -155,6 +155,10 @@ class Input<T> {
 							jInput.val( v );
 							jInput.val( Std.string( parseInputValue() ) ); // Force clamping
 							jInput.addClass("editing");
+							if( customConfirm==null && ( validityCheck==null || validityCheck(parseInputValue()) ) ) {
+								setter( fixValue( parseInputValue() ) );
+								onSlide();
+							}
 						}
 					})
 					.on("mouseup.slider", function(ev) {
@@ -224,6 +228,7 @@ class Input<T> {
 	public dynamic function onBeforeSetter(v:T) {}
 	public dynamic function fixValue(v:T) : T { return v; }
 	public dynamic function onChange() {}
+	public dynamic function onSlide() {} // called while dragging the slider, before the final value is committed
 	public dynamic function onValueChange(v:T) {}
 
 	function parseInputValue() : T {

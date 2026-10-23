@@ -186,6 +186,12 @@ class EntityInstanceEditor extends dn.Process {
 		jWrapper.scrollTop( scrollMem );
 	}
 
+	function onEntitySliding() {
+		editor.levelRender.invalidateLayer(ei._li);
+		if( editor.selectionTool.any() )
+			editor.selectionTool.invalidateRender();
+	}
+
 	function onEntityFieldChanged() {
 		editor.curLevelTimeline.markEntityChange(ei);
 		editor.curLevelTimeline.saveLayerState(ei._li);
@@ -228,6 +234,7 @@ class EntityInstanceEditor extends dn.Process {
 		i.enableSlider(sliderSpeed, false);
 		i.linkEvent( EntityInstanceChanged(ei) );
 		i.onChange = ()->onEntityFieldChanged();
+		i.onSlide = ()->onEntitySliding();
 		if( UNIT_GRID )
 			i.setUnit(ei._li.def.gridSize);
 
@@ -237,6 +244,7 @@ class EntityInstanceEditor extends dn.Process {
 		i.enableSlider(sliderSpeed, false);
 		i.linkEvent( EntityInstanceChanged(ei) );
 		i.onChange = ()->onEntityFieldChanged();
+		i.onSlide = ()->onEntitySliding();
 		if( UNIT_GRID )
 			i.setUnit(ei._li.def.gridSize);
 
