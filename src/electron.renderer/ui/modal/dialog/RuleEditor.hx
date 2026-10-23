@@ -94,7 +94,8 @@ class RuleEditor extends ui.modal.Dialog {
 
 	function onAnyRuleChange() {
 		hasAnyChange = true;
-		// editor.ge.emit( LayerRuleChanged(rule) );
+		rule.updateUsedValues();
+		editor.ge.emit( LayerRuleChanged(rule) );
 	}
 
 
