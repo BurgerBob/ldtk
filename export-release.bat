@@ -9,7 +9,7 @@ if not exist "export-release.local.bat" (
 	pause
 	exit /b 1
 )
-call "export-release.local.bat"
+call "%~dp0export-release.local.bat"
 if "%DEST%"=="" (
 	echo DEST is not defined in export-release.local.bat
 	pause
