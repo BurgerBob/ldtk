@@ -159,7 +159,7 @@ class Progress extends ui.Modal {
 					startTime = haxe.Timer.stamp();
 
 				var spent = 0.;
-				while( curOps.length>0 && spent<MAX_FRAME_DURATION_S ) {
+				while( curOps.length>0 && spent<MAX_FRAME_DURATION_S && !destroyed ) {
 					if( spent>0 && curOps[0].isExpensive ) // ensure "expensive" op start in their own frame
 						break;
 
