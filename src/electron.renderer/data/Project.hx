@@ -970,6 +970,19 @@ class Project {
 				}
 				App.LOG.add("cache", " -> pixels "+pixels.width+"x"+pixels.height);
 				pixels.convert(RGBA);
+
+				// Aseprite: decoder returns all frames packed in a grid, only keep the 1st frame (at 0,0)
+				if( dn.Identify.getType(bytes)==Aseprite && bytes.length>=12 ) {
+					var frameWid = bytes.getUInt16(8);
+					var frameHei = bytes.getUInt16(10);
+					if( frameWid>0 && frameHei>0 && ( frameWid<pixels.width || frameHei<pixels.height ) ) {
+						pixels = pixels.sub(0, 0, M.imin(frameWid,pixels.width), M.imin(frameHei,pixels.height));
+						App.LOG.add("cache", " -> aseprite 1st frame only: "+pixels.width+"x"+pixels.height);
+					}
+					// Browser can't display .aseprite data, so expose the 1st frame as PNG
+					bytes = pixels.clone().toPNG();
+					base64 = haxe.crypto.Base64.encode(bytes);
+				}
 				var texture = h3d.mat.Texture.fromPixels(pixels);
 				imageCache.set( relPath, {
 					fileName: dn.FilePath.extractFileWithExt(relPath),
